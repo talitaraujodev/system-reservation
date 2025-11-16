@@ -1,25 +1,15 @@
 import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { BookingPersistenceAdapter } from 'src/adapter/output/persistense/BookingPersistenceAdapter';
 import { BookingEntity } from 'src/adapter/output/persistense/entities/BookingEntity';
 import { BookingService } from './services/BookingService';
+import { RabbitMQProvider } from './providers/rabbitMqProvider';
+import { RabbitMqAdapter } from 'src/adapter/output/RabbitMqAdapter';
 
 @Global()
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([BookingEntity]),
-    ClientsModule.register([
-      {
-        name: 'BOOKING_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RMQ_URL || 'amqp://rabbitmq:5672'],
-          queue: 'booking_queue',
-        },
-      },
-    ]),
-  ],
+  imports: [ConfigModule.forRoot(), TypeOrmModule.forFeature([BookingEntity])],
   providers: [
     {
       provide: 'BookingPersistence',
@@ -29,6 +19,11 @@ import { BookingService } from './services/BookingService';
       provide: 'BookingServiceInputPort',
       useClass: BookingService,
     },
+    {
+      provide: 'RabbitMqAdapterOutputPort',
+      useClass: RabbitMqAdapter,
+    },
+    RabbitMQProvider,
   ],
   exports: [
     {
@@ -39,6 +34,11 @@ import { BookingService } from './services/BookingService';
       provide: 'BookingServiceInputPort',
       useClass: BookingService,
     },
+    {
+      provide: 'RabbitMqAdapterOutputPort',
+      useClass: RabbitMqAdapter,
+    },
+    RabbitMQProvider,
   ],
 })
 export class ApplicationModule {}

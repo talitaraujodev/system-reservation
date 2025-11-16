@@ -3,20 +3,23 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Injectable,
 } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import { v4 as uuidv4 } from 'uuid';
 import { BookingServiceInputPort } from '../input/BookingServiceInputPort';
 import type { BookingPersistenceOutputPort } from '../output/BookingPersistenceOutputPort';
 import { Booking } from 'src/domain/models/Booking';
 import { InputCreateBookingDto } from '../input/dto/InputCreateBookingDto';
 import type { InputUpdateBookingDto } from '../input/dto/InputUpdateBookingDto';
+import type { RabbitMqAdapterOutputPort } from '../output/RabbitMqAdapterOutputPort';
 
+@Injectable()
 export class BookingService implements BookingServiceInputPort {
   constructor(
     @Inject('BookingPersistence')
     private readonly bookingPersistenceOutputPort: BookingPersistenceOutputPort,
-    @Inject('BOOKING_SERVICE') private rabbitClient: ClientProxy,
+    @Inject('RabbitMqAdapterOutputPort')
+    private readonly rabbitMqAdapter: RabbitMqAdapterOutputPort,
   ) {}
 
   async create(booking: InputCreateBookingDto): Promise<Booking> {
@@ -38,7 +41,11 @@ export class BookingService implements BookingServiceInputPort {
     const createdBooking =
       await this.bookingPersistenceOutputPort.create(createBooking);
 
-    this.rabbitClient.emit('booking_created', createdBooking);
+    await this.rabbitMqAdapter.publishInExchange(
+      'amq.topic',
+      'booking.created',
+      JSON.stringify({ ...createdBooking }),
+    );
 
     return createdBooking;
   }
@@ -78,12 +85,22 @@ export class BookingService implements BookingServiceInputPort {
     if (booking.status && booking.status !== bookingData.status) {
       bookingData.status = booking.status;
     }
-
-    return this.bookingPersistenceOutputPort.update(bookingData);
+    const updatedBooking =
+      await this.bookingPersistenceOutputPort.update(bookingData);
+    await this.rabbitMqAdapter.publishInExchange(
+      'amq.topic',
+      'booking.updated',
+      JSON.stringify({ ...updatedBooking }),
+    );
+    return updatedBooking;
   }
   async delete(bookingId: string): Promise<void> {
     await this.bookingPersistenceOutputPort.delete(bookingId);
-    this.rabbitClient.emit('booking_deleted', bookingId);
+    await this.rabbitMqAdapter.publishInExchange(
+      'amq.topic',
+      'booking.deleted',
+      JSON.stringify({ bookingId }),
+    );
   }
   async findOne(bookingId: string): Promise<Booking> {
     const booking = await this.bookingPersistenceOutputPort.findOne(bookingId);
@@ -93,7 +110,11 @@ export class BookingService implements BookingServiceInputPort {
     return booking;
   }
   async findAll(): Promise<Booking[]> {
-    this.rabbitClient.emit('booking_list', { ok: 'ok' });
+    await this.rabbitMqAdapter.publishInExchange(
+      'amq.topic',
+      'booking.findAll',
+      JSON.stringify({ bookings: [], success: true }),
+    );
     return await this.bookingPersistenceOutputPort.findAll();
   }
 }
