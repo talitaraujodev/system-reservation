@@ -8,7 +8,9 @@ import {
 import type { RabbitMQProviderType } from 'src/application/providers/rabbitMqProvider';
 
 @Injectable()
-export class RabbitMqAdapter implements RabbitMqAdapterOutputPort, OnModuleInit {
+export class RabbitMqAdapter
+  implements RabbitMqAdapterOutputPort, OnModuleInit
+{
   private channel: Channel;
 
   constructor(
@@ -37,11 +39,7 @@ export class RabbitMqAdapter implements RabbitMqAdapterOutputPort, OnModuleInit 
       await this.channel.assertQueue('notification_queue', { durable: true });
 
       // Bind queues to exchange
-      await this.channel.bindQueue(
-        'booking_queue',
-        'amq.topic',
-        'booking.*',
-      );
+      await this.channel.bindQueue('booking_queue', 'amq.topic', 'booking.*');
       await this.channel.bindQueue(
         'notification_queue',
         'amq.topic',

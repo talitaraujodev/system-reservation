@@ -5,7 +5,6 @@ import { NotificationService } from './services/NotificantionService';
 import { RabbitMQProvider } from './providers/rabbitMqProvider';
 import { RabbitMqAdapter } from 'src/adapter/output/RabbitMqAdapter';
 
-
 @Global()
 @Module({
   imports: [ConfigModule.forRoot(), TypeOrmModule.forFeature([])],
@@ -23,7 +22,7 @@ import { RabbitMqAdapter } from 'src/adapter/output/RabbitMqAdapter';
   exports: [
     {
       provide: 'NotificationServiceInputPort',
-      useClass: NotificationService, 
+      useClass: NotificationService,
     },
     {
       provide: 'RabbitMqAdapterOutputPort',
