@@ -34,16 +34,58 @@ export class RabbitMqAdapter
 
   private async setupExchangesAndQueues() {
     try {
+      // Create exchange
+      await this.channel.assertExchange(
+        'app.system.reservation.topic',
+        'topic',
+        {
+          durable: true,
+        },
+      );
+
       // Create queues
-      await this.channel.assertQueue('booking_queue', { durable: true });
-      await this.channel.assertQueue('notification_queue', { durable: true });
+      await this.channel.assertQueue('bookings_queue', { durable: true });
+      await this.channel.assertQueue('notifications_queue', { durable: true });
+      await this.channel.assertQueue('reservations_calender_queue', {
+        durable: true,
+      });
+      await this.channel.assertQueue('payments_queue', { durable: true });
 
       // Bind queues to exchange
-      await this.channel.bindQueue('booking_queue', 'amq.topic', 'booking.*');
       await this.channel.bindQueue(
-        'notification_queue',
-        'amq.topic',
+        'bookings_queue',
+        'app.system.reservation.topic',
+        'calendar.*',
+      );
+
+      await this.channel.bindQueue(
+        'reservations_calender_queue',
+        'app.system.reservation.topic',
         'booking.*',
+      );
+
+      await this.channel.bindQueue(
+        'reservations_calender_queue',
+        'app.system.reservation.topic',
+        'payment.*',
+      );
+
+      await this.channel.bindQueue(
+        'notifications_queue',
+        'app.system.reservation.topic',
+        'booking.*',
+      );
+
+      await this.channel.bindQueue(
+        'notifications_queue',
+        'app.system.reservation.topic',
+        'payment.*',
+      );
+
+      await this.channel.bindQueue(
+        'notifications_queue',
+        'app.system.reservation.topic',
+        'calendar.*',
       );
 
       this.channel.on('error', (err) => {
@@ -82,6 +124,7 @@ export class RabbitMqAdapter
       await this.start();
     }
     return this.channel.consume(queue, (message) => {
+      if (!message) return;
       if (callback) callback(message);
       this.channel.ack(message);
     });

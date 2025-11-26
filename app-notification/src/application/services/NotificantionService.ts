@@ -18,7 +18,7 @@ export class NotificationService
   }
 
   async handleBookingCreated(): Promise<void> {
-    await this.rabbitMqAdapter.consume('notification_queue', (message) => {
+    await this.rabbitMqAdapter.consume('notifications_queue', (message) => {
       console.log('Evento recebido:', message.content.toString());
     });
   }

@@ -1,6 +1,10 @@
 import { Message } from 'amqplib';
-export type Queque = 'booking_queue' | 'notification_queue';
-export type Exchange = 'amq.topic';
+export type Queque =
+  | 'bookings_queue'
+  | 'notifications_queue'
+  | 'reservations_calender_queue'
+  | 'payments_queue';
+export type Exchange = 'app.system.reservation.topic';
 
 export interface RabbitMqAdapterOutputPort {
   publishInQueue(queue: Queque, message: string): Promise<boolean>;

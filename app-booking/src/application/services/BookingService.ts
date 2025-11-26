@@ -42,7 +42,7 @@ export class BookingService implements BookingServiceInputPort {
       await this.bookingPersistenceOutputPort.create(createBooking);
 
     await this.rabbitMqAdapter.publishInExchange(
-      'amq.topic',
+      'app.system.reservation.topic',
       'booking.created',
       JSON.stringify({ ...createdBooking }),
     );
@@ -88,7 +88,7 @@ export class BookingService implements BookingServiceInputPort {
     const updatedBooking =
       await this.bookingPersistenceOutputPort.update(bookingData);
     await this.rabbitMqAdapter.publishInExchange(
-      'amq.topic',
+      'app.system.reservation.topic',
       'booking.updated',
       JSON.stringify({ ...updatedBooking }),
     );
@@ -97,7 +97,7 @@ export class BookingService implements BookingServiceInputPort {
   async delete(bookingId: string): Promise<void> {
     await this.bookingPersistenceOutputPort.delete(bookingId);
     await this.rabbitMqAdapter.publishInExchange(
-      'amq.topic',
+      'app.system.reservation.topic',
       'booking.deleted',
       JSON.stringify({ bookingId }),
     );
@@ -111,7 +111,7 @@ export class BookingService implements BookingServiceInputPort {
   }
   async findAll(): Promise<Booking[]> {
     await this.rabbitMqAdapter.publishInExchange(
-      'amq.topic',
+      'app.system.reservation.topic',
       'booking.findAll',
       JSON.stringify({ bookings: [], success: true }),
     );
